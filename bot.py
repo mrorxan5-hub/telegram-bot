@@ -3,7 +3,7 @@ import random
 import time
 import threading
 import requests
-from telegram.ext import ApplicationBuilder, CommandHandler
+from telegram.ext import Updater, CommandHandler
 
 TOKEN = "SENIN_TOKEN"
 
@@ -28,10 +28,8 @@ users = load_users()
 # ---------- CHECK ----------
 def check_instagram(username):
     url = f"https://www.instagram.com/{username}/"
-
     try:
         r = requests.get(url, timeout=10)
-
         if r.status_code == 200:
             return "active"
         elif r.status_code == 404:
@@ -42,48 +40,45 @@ def check_instagram(username):
         return "unknown"
 
 # ---------- COMMANDS ----------
-async def start(update, context):
+def start(update, context):
     global CHAT_ID
     CHAT_ID = update.effective_chat.id
-    await update.message.reply_text("Bot aktivdir ✅")
+    update.message.reply_text("Bot aktivdir ✅")
 
-async def add(update, context):
+def add(update, context):
     username = " ".join(context.args)
-
     if username:
         users[username] = "unknown"
         save_users(users)
-        await update.message.reply_text(f"{username} əlavə olundu 👌")
+        update.message.reply_text(f"{username} əlavə olundu 👌")
     else:
-        await update.message.reply_text("Username yaz")
+        update.message.reply_text("Username yaz")
 
-async def list_users(update, context):
+def list_users(update, context):
     if users:
-        await update.message.reply_text("\n".join(users.keys()))
+        update.message.reply_text("\n".join(users.keys()))
     else:
-        await update.message.reply_text("Boşdur")
+        update.message.reply_text("Boşdur")
 
-async def remove(update, context):
+def remove(update, context):
     username = " ".join(context.args)
-
     if username in users:
         del users[username]
         save_users(users)
-        await update.message.reply_text("Silindi ❌")
+        update.message.reply_text("Silindi ❌")
     else:
-        await update.message.reply_text("Tapılmadı")
+        update.message.reply_text("Tapılmadı")
 
 # ---------- BACKGROUND ----------
-def checker(app):
+def checker(updater):
     time.sleep(10)
-
     while True:
         for username in users:
             status = check_instagram(username)
 
             if users[username] == "closed" and status == "active":
                 if CHAT_ID:
-                    app.bot.send_message(
+                    updater.bot.send_message(
                         chat_id=CHAT_ID,
                         text=f"{username} AÇILDI 🔥"
                     )
@@ -97,17 +92,19 @@ def checker(app):
 
 # ---------- MAIN ----------
 def main():
-    app = ApplicationBuilder().token(TOKEN).build()
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("add", add))
-    app.add_handler(CommandHandler("list", list_users))
-    app.add_handler(CommandHandler("remove", remove))
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("add", add))
+    dp.add_handler(CommandHandler("list", list_users))
+    dp.add_handler(CommandHandler("remove", remove))
 
-    threading.Thread(target=checker, args=(app,), daemon=True).start()
+    threading.Thread(target=checker, args=(updater,), daemon=True).start()
 
     print("Bot işləyir...")
-    app.run_polling()
+    updater.start_polling()
+    updater.idle()
 
 if __name__ == "__main__":
     main()
