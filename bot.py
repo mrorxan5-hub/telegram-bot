@@ -1,72 +1,46 @@
-import requests
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+import os
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-TOKEN = "TOKEN"  # Railway-da env-dən gəlir (dəyişmə)
+TOKEN = os.getenv("TOKEN")
 
 users = []
 
-# START
-def start(update, context):
-    update.message.reply_text("Salam 👋 Bot aktivdir!\n\nKomandalar:\n/add username\n/list\n/remove username\n/yoxla username")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Salam 👋 Bot aktivdir!\n\nKomandalar:\n/add username\n/list\n/remove username"
+    )
 
-# HELP
-def help_command(update, context):
-    update.message.reply_text("Komandalar:\n/add username\n/list\n/remove username\n/yoxla username")
-
-# ADD
-def add(update, context):
-    username = " ".join(context.args)
-    if username:
+async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.args:
+        username = " ".join(context.args)
         users.append(username)
-        update.message.reply_text(f"{username} əlavə olundu ✅")
+        await update.message.reply_text(f"{username} əlavə olundu ✅")
     else:
-        update.message.reply_text("Username yaz!")
+        await update.message.reply_text("Username yaz!")
 
-# LIST
-def list_users(update, context):
+async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if users:
-        update.message.reply_text("\n".join(users))
+        await update.message.reply_text("\n".join(users))
     else:
-        update.message.reply_text("Siyahı boşdur")
+        await update.message.reply_text("Siyahı boşdur")
 
-# REMOVE
-def remove(update, context):
-    username = " ".join(context.args)
-    if username in users:
-        users.remove(username)
-        update.message.reply_text(f"{username} silindi ❌")
+async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if context.args:
+        username = " ".join(context.args)
+        if username in users:
+            users.remove(username)
+            await update.message.reply_text(f"{username} silindi ❌")
+        else:
+            await update.message.reply_text("Tapılmadı")
     else:
-        update.message.reply_text("Tapılmadı")
+        await update.message.reply_text("Username yaz!")
 
-# YOXLA (aktivlik check)
-def yoxla(update, context):
-    username = " ".join(context.args)
+app = ApplicationBuilder().token(TOKEN).build()
 
-    if not username:
-        update.message.reply_text("Username yaz!")
-        return
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("add", add))
+app.add_handler(CommandHandler("list", list_users))
+app.add_handler(CommandHandler("remove", remove))
 
-    url = f"https://www.instagram.com/{username}/"
-    r = requests.get(url)
-
-    if r.status_code == 200:
-        update.message.reply_text(f"{username} aktivdir ✅")
-    else:
-        update.message.reply_text(f"{username} tapılmadı ❌")
-
-def main():
-    updater = Updater(TOKEN, use_context=True)
-    dp = updater.dispatcher
-
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help_command))
-    dp.add_handler(CommandHandler("add", add))
-    dp.add_handler(CommandHandler("list", list_users))
-    dp.add_handler(CommandHandler("remove", remove))
-    dp.add_handler(CommandHandler("yoxla", yoxla))
-
-    updater.start_polling()
-    updater.idle()
-
-if __name__ == "__main__":
-    main()
+app.run_polling()
