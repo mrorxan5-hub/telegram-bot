@@ -2,7 +2,7 @@ import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-TOKEN = os.getenv("TOKEN")
+TOKEN = os.environ.get("TOKEN")
 
 users = []
 
@@ -43,3 +43,9 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if users:
+        await update.message.reply_text("\n".join(users))
+    else:
+        await update.message.reply_text("List boşdur")
