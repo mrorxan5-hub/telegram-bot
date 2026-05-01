@@ -1,46 +1,45 @@
 import os
-from telegram.ext import Updater, CommandHandler
+from telegram import Update
+from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 TOKEN = os.getenv("TOKEN")
 
 users = []
 
-def start(update, context):
-    update.message.reply_text("Salam 👋 Bot aktivdir!")
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("Salam 👋 Bot aktivdir!")
 
-def add(update, context):
+async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = " ".join(context.args)
     if username:
         users.append(username)
-        update.message.reply_text(f"{username} əlavə olundu ✅")
+        await update.message.reply_text(f"{username} əlavə olundu ✅")
     else:
-        update.message.reply_text("Username yazmadın ❌")
+        await update.message.reply_text("Username yazmadın ❌")
 
-def list_users(update, context):
+async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if users:
-        update.message.reply_text("\n".join(users))
+        await update.message.reply_text("\n".join(users))
     else:
-        update.message.reply_text("List boşdur")
+        await update.message.reply_text("List boşdur")
 
-def remove(update, context):
+async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
     username = " ".join(context.args)
     if username in users:
         users.remove(username)
-        update.message.reply_text(f"{username} silindi ❌")
+        await update.message.reply_text(f"{username} silindi ❌")
     else:
-        update.message.reply_text("Tapılmadı")
+        await update.message.reply_text("Tapılmadı")
 
 def main():
-    updater = Updater(TOKEN, use_context=True)
-    dp = updater.dispatcher
+    app = ApplicationBuilder().token(TOKEN).build()
 
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("add", add))
-    dp.add_handler(CommandHandler("list", list_users))
-    dp.add_handler(CommandHandler("remove", remove))
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("add", add))
+    app.add_handler(CommandHandler("list", list_users))
+    app.add_handler(CommandHandler("remove", remove))
 
-    updater.start_polling()
-    updater.idle()
+    app.run_polling()
 
 if __name__ == "__main__":
     main()
