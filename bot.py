@@ -1,50 +1,46 @@
 import os
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import Updater, CommandHandler
 
 TOKEN = os.getenv("TOKEN")
 
 users = []
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Salam 👋 Bot aktivdir!\n\nKomandalar:\n/add username\n/list\n/remove username"
-    )
+def start(update, context):
+    update.message.reply_text("Salam 👋 Bot aktivdir!")
 
-async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.args:
-        username = " ".join(context.args)
+def add(update, context):
+    username = " ".join(context.args)
+    if username:
         users.append(username)
-        await update.message.reply_text(f"{username} əlavə olundu ✅")
+        update.message.reply_text(f"{username} əlavə olundu ✅")
     else:
-        await update.message.reply_text("Username yaz!")
+        update.message.reply_text("Username yazmadın ❌")
 
-async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+def list_users(update, context):
     if users:
-        await update.message.reply_text("\n".join(users))
+        update.message.reply_text("\n".join(users))
     else:
-        await update.message.reply_text("Siyahı boşdur")
+        update.message.reply_text("List boşdur")
 
-async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    if context.args:
-        username = " ".join(context.args)
-        if username in users:
-            users.remove(username)
-            await update.message.reply_text(f"{username} silindi ❌")
-        else:
-            await update.message.reply_text("Tapılmadı")
+def remove(update, context):
+    username = " ".join(context.args)
+    if username in users:
+        users.remove(username)
+        update.message.reply_text(f"{username} silindi ❌")
     else:
-        await update.message.reply_text("Username yaz!")
+        update.message.reply_text("Tapılmadı")
 
-app = ApplicationBuilder().token(TOKEN).build()
+def main():
+    updater = Updater(TOKEN, use_context=True)
+    dp = updater.dispatcher
 
-app.add_handler(CommandHandler("start", start))
-app.add_handler(CommandHandler("add", add))
-app.add_handler(CommandHandler("list", list_users))
-app.add_handler(CommandHandler("remove", remove))
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("add", add))
+    dp.add_handler(CommandHandler("list", list_users))
+    dp.add_handler(CommandHandler("remove", remove))
 
-updater.start_polling()
+    updater.start_polling()
     updater.idle()
 
-if _name_ == "_main_":
+if __name__ == "__main__":
     main()
