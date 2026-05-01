@@ -28,8 +28,12 @@ users = load_users()
 # ---------- INSTAGRAM CHECK ----------
 def check_instagram(username):
     url = f"https://www.instagram.com/{username}/"
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
     try:
-        r = requests.get(url, timeout=10)
+        r = requests.get(url, headers=headers, timeout=10)
+
         if r.status_code == 200:
             return "active"
         elif r.status_code == 404:
