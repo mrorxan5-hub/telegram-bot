@@ -1,9 +1,11 @@
+import telebot
 import json
 import random
 import time
 import threading
 import requests
-from telegram.ext import Updater, CommandHandler
+
+
 
 TOKEN = "8307363974:AAGtaAf1v4hyPso0ejFf8bFumDOTHi2hHrE"
 
