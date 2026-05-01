@@ -1,83 +1,72 @@
 import requests
-import time
-from telegram import Bot, Update
-from telegram.ext import Updater, CommandHandler, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-TOKEN = "8307363974:AAGtaAf1v4hyPso0ejFf8bFumDOTHi2hHrE"
-CHAT_ID = "1026110111"
+TOKEN = "TOKEN"  # Railway-da env-dən gəlir (dəyişmə)
 
-bot = Bot(token=TOKEN)
+users = []
 
-users = {}
+# START
+def start(update, context):
+    update.message.reply_text("Salam 👋 Bot aktivdir!\n\nKomandalar:\n/add username\n/list\n/remove username\n/yoxla username")
 
-def check_instagram(username):
+# HELP
+def help_command(update, context):
+    update.message.reply_text("Komandalar:\n/add username\n/list\n/remove username\n/yoxla username")
+
+# ADD
+def add(update, context):
+    username = " ".join(context.args)
+    if username:
+        users.append(username)
+        update.message.reply_text(f"{username} əlavə olundu ✅")
+    else:
+        update.message.reply_text("Username yaz!")
+
+# LIST
+def list_users(update, context):
+    if users:
+        update.message.reply_text("\n".join(users))
+    else:
+        update.message.reply_text("Siyahı boşdur")
+
+# REMOVE
+def remove(update, context):
+    username = " ".join(context.args)
+    if username in users:
+        users.remove(username)
+        update.message.reply_text(f"{username} silindi ❌")
+    else:
+        update.message.reply_text("Tapılmadı")
+
+# YOXLA (aktivlik check)
+def yoxla(update, context):
+    username = " ".join(context.args)
+
+    if not username:
+        update.message.reply_text("Username yaz!")
+        return
+
     url = f"https://www.instagram.com/{username}/"
     r = requests.get(url)
 
     if r.status_code == 200:
-        return "active"
-    elif r.status_code == 404:
-        return "closed"
+        update.message.reply_text(f"{username} aktivdir ✅")
     else:
-        return "unknown"
-
-# ----------- COMMANDS -----------
-
-def add(update: Update, context: CallbackContext):
-    if len(context.args) == 0:
-        update.message.reply_text("Username yaz: /add username")
-        return
-
-    username = context.args[0]
-    users[username] = "unknown"
-    update.message.reply_text(f"{username} əlavə olundu ✅")
-
-def list_users(update: Update, context: CallbackContext):
-    if not users:
-        update.message.reply_text("Heç nə yoxdur")
-    else:
-        text = "\n".join(users.keys())
-        update.message.reply_text(text)
-
-def remove(update: Update, context: CallbackContext):
-    if len(context.args) == 0:
-        return
-
-    username = context.args[0]
-    if username in users:
-        del users[username]
-        update.message.reply_text(f"{username} silindi ❌")
-
-# ----------- CHECK LOOP -----------
-
-def check_loop():
-    while True:
-        for username in users:
-            status = check_instagram(username)
-
-            if users[username] != "unknown" and users[username] != status:
-                if status == "active":
-                    bot.send_message(chat_id=CHAT_ID, text=f"{username} aktiv oldu ✅")
-                elif status == "closed":
-                    bot.send_message(chat_id=CHAT_ID, text=f"{username} bağlandı ❌")
-
-            users[username] = status
-
-        time.sleep(30)
-
-# ----------- MAIN -----------
+        update.message.reply_text(f"{username} tapılmadı ❌")
 
 def main():
-    updater = Updater(TOKEN)
+    updater = Updater(TOKEN, use_context=True)
     dp = updater.dispatcher
 
+    dp.add_handler(CommandHandler("start", start))
+    dp.add_handler(CommandHandler("help", help_command))
     dp.add_handler(CommandHandler("add", add))
     dp.add_handler(CommandHandler("list", list_users))
     dp.add_handler(CommandHandler("remove", remove))
+    dp.add_handler(CommandHandler("yoxla", yoxla))
 
     updater.start_polling()
-
-    check_loop()
+    updater.idle()
 
 if __name__ == "__main__":
     main()
