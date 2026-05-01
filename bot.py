@@ -2,7 +2,7 @@ import os
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
-TOKEN = os.environ.get("TOKEN")
+TOKEN = 8307363974:AAGtaAf1v4hyPso0ejFf8bFumDOTHi2hHrE
 
 users = []
 
