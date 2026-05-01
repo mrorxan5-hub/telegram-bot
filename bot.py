@@ -1,17 +1,16 @@
-import os
 import json
 import random
-import asyncio
+import time
+import threading
 import requests
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram.ext import ApplicationBuilder, CommandHandler
 
-TOKEN = "8307363974:AAGtaAf1v4hyPso0ejFf8bFumDOTHi2hHrE"
+TOKEN = "SENIN_TOKEN"
 
 DATA_FILE = "users.json"
 CHAT_ID = None
 
-# ---------- LOAD / SAVE ----------
+# ---------- LOAD ----------
 def load_users():
     try:
         with open(DATA_FILE, "r") as f:
@@ -19,26 +18,19 @@ def load_users():
     except:
         return {}
 
+# ---------- SAVE ----------
 def save_users(users):
     with open(DATA_FILE, "w") as f:
         json.dump(users, f)
 
 users = load_users()
 
-# ---------- INSTAGRAM CHECK ----------
+# ---------- CHECK ----------
 def check_instagram(username):
     url = f"https://www.instagram.com/{username}/"
 
-    headers = {
-        "User-Agent": random.choice([
-            "Mozilla/5.0",
-            "Chrome/120.0",
-            "Safari/537.36"
-        ])
-    }
-
     try:
-        r = requests.get(url, headers=headers, timeout=10)
+        r = requests.get(url, timeout=10)
 
         if r.status_code == 200:
             return "active"
@@ -50,12 +42,12 @@ def check_instagram(username):
         return "unknown"
 
 # ---------- COMMANDS ----------
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def start(update, context):
     global CHAT_ID
-    CHAT_ID = update.message.chat_id
+    CHAT_ID = update.effective_chat.id
     await update.message.reply_text("Bot aktivdir ✅")
 
-async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def add(update, context):
     username = " ".join(context.args)
 
     if username:
@@ -65,26 +57,25 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await update.message.reply_text("Username yaz")
 
-async def list_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def list_users(update, context):
     if users:
-        text = "\n".join(users.keys())
-        await update.message.reply_text(text)
+        await update.message.reply_text("\n".join(users.keys()))
     else:
         await update.message.reply_text("Boşdur")
 
-async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def remove(update, context):
     username = " ".join(context.args)
 
     if username in users:
         del users[username]
         save_users(users)
-        await update.message.reply_text(f"{username} silindi ❌")
+        await update.message.reply_text("Silindi ❌")
     else:
         await update.message.reply_text("Tapılmadı")
 
-# ---------- CHECK LOOP ----------
-async def checker(app):
-    await asyncio.sleep(10)
+# ---------- BACKGROUND ----------
+def checker(app):
+    time.sleep(10)
 
     while True:
         for username in users:
@@ -92,7 +83,7 @@ async def checker(app):
 
             if users[username] == "closed" and status == "active":
                 if CHAT_ID:
-                    await app.bot.send_message(
+                    app.bot.send_message(
                         chat_id=CHAT_ID,
                         text=f"{username} AÇILDI 🔥"
                     )
@@ -100,12 +91,12 @@ async def checker(app):
             users[username] = status
             save_users(users)
 
-            await asyncio.sleep(random.randint(5, 10))  # gizli delay
+            time.sleep(random.randint(5, 10))
 
-        await asyncio.sleep(60)
+        time.sleep(60)
 
 # ---------- MAIN ----------
-async def main():
+def main():
     app = ApplicationBuilder().token(TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))
@@ -113,10 +104,10 @@ async def main():
     app.add_handler(CommandHandler("list", list_users))
     app.add_handler(CommandHandler("remove", remove))
 
-    app.create_task(checker(app))
+    threading.Thread(target=checker, args=(app,), daemon=True).start()
 
     print("Bot işləyir...")
-    await app.run_polling()
+    app.run_polling()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
