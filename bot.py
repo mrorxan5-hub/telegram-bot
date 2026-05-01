@@ -43,4 +43,8 @@ app.add_handler(CommandHandler("add", add))
 app.add_handler(CommandHandler("list", list_users))
 app.add_handler(CommandHandler("remove", remove))
 
-app.run_polling()
+updater.start_polling()
+    updater.idle()
+
+if _name_ == "_main_":
+    main()
