@@ -1,18 +1,16 @@
 import telebot
 import json
-import random
 import time
 import threading
 import requests
 
-
-
 TOKEN = "8307363974:AAGtaAf1v4hyPso0ejFf8bFumDOTHi2hHrE"
+
+bot = telebot.TeleBot(TOKEN)
 
 DATA_FILE = "users.json"
 CHAT_ID = None
 
-# ---------- LOAD ----------
 def load_users():
     try:
         with open(DATA_FILE, "r") as f:
@@ -20,14 +18,12 @@ def load_users():
     except:
         return {}
 
-# ---------- SAVE ----------
 def save_users(users):
     with open(DATA_FILE, "w") as f:
         json.dump(users, f)
 
 users = load_users()
 
-# ---------- CHECK ----------
 def check_instagram(username):
     url = f"https://www.instagram.com/{username}/"
     try:
@@ -41,38 +37,40 @@ def check_instagram(username):
     except:
         return "unknown"
 
-# ---------- COMMANDS ----------
-def start(update, context):
+@bot.message_handler(commands=['start'])
+def start(message):
     global CHAT_ID
-    CHAT_ID = update.effective_chat.id
-    update.message.reply_text("Bot aktivdir ✅")
+    CHAT_ID = message.chat.id
+    bot.reply_to(message, "Bot aktivdir ✅")
 
-def add(update, context):
-    username = " ".join(context.args)
+@bot.message_handler(commands=['add'])
+def add(message):
+    username = message.text.replace("/add ", "")
     if username:
         users[username] = "unknown"
         save_users(users)
-        update.message.reply_text(f"{username} əlavə olundu 👌")
+        bot.reply_to(message, f"{username} əlavə olundu 👌")
     else:
-        update.message.reply_text("Username yaz")
+        bot.reply_to(message, "Username yaz")
 
-def list_users(update, context):
+@bot.message_handler(commands=['list'])
+def list_users(message):
     if users:
-        update.message.reply_text("\n".join(users.keys()))
+        bot.reply_to(message, "\n".join(users.keys()))
     else:
-        update.message.reply_text("Boşdur")
+        bot.reply_to(message, "Boşdur")
 
-def remove(update, context):
-    username = " ".join(context.args)
+@bot.message_handler(commands=['remove'])
+def remove(message):
+    username = message.text.replace("/remove ", "")
     if username in users:
         del users[username]
         save_users(users)
-        update.message.reply_text("Silindi ❌")
+        bot.reply_to(message, "Silindi ❌")
     else:
-        update.message.reply_text("Tapılmadı")
+        bot.reply_to(message, "Tapılmadı")
 
-# ---------- BACKGROUND ----------
-def checker(updater):
+def checker():
     time.sleep(10)
     while True:
         for username in users:
@@ -80,33 +78,16 @@ def checker(updater):
 
             if users[username] == "closed" and status == "active":
                 if CHAT_ID:
-                    updater.bot.send_message(
-                        chat_id=CHAT_ID,
-                        text=f"{username} AÇILDI 🔥"
-                    )
+                    bot.send_message(CHAT_ID, f"{username} AÇILDI 🔥")
 
             users[username] = status
             save_users(users)
 
-            time.sleep(random.randint(5, 10))
+            time.sleep(5)
 
         time.sleep(60)
 
-# ---------- MAIN ----------
-def main():
-    updater = Updater(TOKEN, use_context=True)
-    dp = updater.dispatcher
+threading.Thread(target=checker, daemon=True).start()
 
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("add", add))
-    dp.add_handler(CommandHandler("list", list_users))
-    dp.add_handler(CommandHandler("remove", remove))
-
-    threading.Thread(target=checker, args=(updater,), daemon=True).start()
-
-    print("Bot işləyir...")
-    updater.start_polling()
-    updater.idle()
-
-if __name__ == "__main__":
-    main()
+print("Bot işləyir...")
+bot.infinity_polling()
