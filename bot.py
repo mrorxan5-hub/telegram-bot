@@ -5,7 +5,7 @@ import threading
 import requests
 from telegram.ext import Updater, CommandHandler
 
-TOKEN = "SENIN_TOKEN"
+TOKEN = "8307363974:AAGtaAf1v4hyPso0ejFf8bFumDOTHi2hHrE"
 
 DATA_FILE = "users.json"
 CHAT_ID = None
